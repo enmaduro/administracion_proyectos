@@ -1,0 +1,37 @@
+{
+  "name": "gestor-gastos-comunitarios",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "homepage": "https://enmaduro.github.io/administracion_proyectos",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^24.10.0",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^5.1.0",
+    "autoprefixer": "^10.4.22",
+    "gh-pages": "^5.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.4",
+    "typescript": "^4.9.3",
+    "vite": "^7.2.2"
+  },
+  "description": "Una aplicación web progresiva (PWA) moderna, intuitiva y potente, diseñada para simplificar la gestión financiera de proyectos comunitarios. Digitaliza facturas y recibos en segundos usando inteligencia artificial, permitiendo un seguimiento, control y reporte de gastos eficiente y transparente.",
+  "main": "sw.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

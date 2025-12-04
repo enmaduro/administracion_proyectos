@@ -1,0 +1,1 @@
+VITE_API_KEY="49927187267-bj5lmj53k5ip37belkcgc733hdugru4f.apps.googleusercontent.com"

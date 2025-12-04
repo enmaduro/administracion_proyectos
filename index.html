@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Gastos de Proyectos</title>
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind y tus estilos se inyectarán aquí automáticamente por Vite -->
+  <style>
+    @keyframes highlight-fade {
+      from { background-color: #fef9c3; }
+      to { background-color: transparent; }
+    }
+    .highlight-row {
+      animation: highlight-fade 4s ease-out;
+    }
+    @keyframes highlight-fade-dark {
+      from { background-color: rgba(254, 249, 195, 0.2); }
+      to { background-color: transparent; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <div id="root"></div>
+  <!-- Vite inyectará el JS y CSS compilado automáticamente -->
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

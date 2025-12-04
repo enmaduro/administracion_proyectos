@@ -1,0 +1,108 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import { Invoice } from '../types';
+
+// FIX: The function now returns a correctly structured object that the Gemini API expects.
+// The mimeType and data are wrapped inside an `inlineData` property.
+const fileToGenerativePart = (file: File) => {
+  return new Promise<{ inlineData: { mimeType: string; data: string } }>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64Data = dataUrl.split(',')[1];
+      resolve({
+        inlineData: {
+          mimeType: file.type,
+          data: base64Data,
+        }
+      });
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+  });
+};
+
+const INVOICE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    invoiceDate: { type: Type.STRING, description: 'La fecha de la factura en formato AAAA-MM-DD.' },
+    supplierName: { type: Type.STRING, description: 'El nombre completo del proveedor o vendedor.' },
+    rif: { type: Type.STRING, description: 'El RIF (Registro de Información Fiscal) del proveedor. Debe incluir la letra inicial (ej. J-12345678-9).' },
+    invoiceNumber: { type: Type.STRING, description: 'El número único de la factura o recibo. A menudo etiquetado como "Nro Factura", "Factura Nro", o similar.' },
+    itemsDescription: { type: Type.STRING, description: 'Un resumen o lista de los artículos comprados.' },
+    totalAmount: { type: Type.NUMBER, description: 'El monto total de la factura como un número, sin símbolos de moneda.' },
+  },
+  required: ['invoiceDate', 'supplierName', 'rif', 'invoiceNumber', 'itemsDescription', 'totalAmount']
+};
+
+export const extractInvoiceData = async (file: File): Promise<Omit<Invoice, 'id' | 'fileDataUrl' | 'fileType' | 'fileName'>> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API key no configurada. Por favor, configure la variable de entorno API_KEY.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const imagePart = await fileToGenerativePart(file);
+
+  const prompt = `
+    Eres un asistente de IA experto en el análisis de documentos fiscales de Venezuela. Tu única función es extraer datos de la imagen o PDF de la factura proporcionada. Debes ser extremadamente preciso.
+
+    Analiza el documento y extrae la siguiente información, devolviendo ÚNICAMENTE un objeto JSON que se adhiera al esquema definido. No añadas explicaciones, comentarios, ni formato markdown.
+
+    Guía Detallada para la Extracción:
+    1.  **invoiceDate**: Localiza la fecha de emisión. Puede estar etiquetada como "Fecha", "Fecha de Emisión", etc. Formatea la fecha estrictamente como AAAA-MM-DD. Si el año no está explícito, infiérelo basándote en el contexto del documento.
+    2.  **supplierName**: Identifica el nombre legal completo de la empresa o persona que emite la factura. Suele estar en la parte superior del documento, en un tamaño de fuente grande.
+    3.  **rif**: Encuentra el RIF (Registro de Información Fiscal) del proveedor. Es un identificador alfanumérico que siempre comienza con una letra (J, V, G, E, P), seguida de 8 dígitos y un dígito verificador. Formato esperado: 'J-12345678-9'. Búscalo cerca del nombre del proveedor.
+    4.  **invoiceNumber**: Busca el número de factura. Puede estar etiquetado como "Factura Nro.", "Nro. de Factura", "Nro. de Control" o similar. Extrae el número exacto que aparece.
+    5.  **itemsDescription**: Proporciona un resumen claro y conciso de los productos o servicios adquiridos. Si hay una lista de artículos, puedes resumirlos o listar los más importantes. El objetivo es dar una idea general de la compra.
+    6.  **totalAmount**: Identifica el monto total final a pagar. Busca etiquetas como "TOTAL", "Total a Pagar", "Monto Total Bs.". Extrae únicamente el valor numérico, eliminando cualquier símbolo de moneda (Bs., $, etc.) y usando un punto (.) como separador decimal. Asegúrate de que es el total definitivo, no un subtotal.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: {
+        parts: [
+          imagePart,
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: INVOICE_SCHEMA,
+      },
+    });
+
+    const parsedData = JSON.parse(response.text);
+
+    // Basic validation to ensure the parsed object matches our expectations
+    if (
+        typeof parsedData.invoiceDate !== 'string' ||
+        typeof parsedData.supplierName !== 'string' ||
+        typeof parsedData.rif !== 'string' ||
+        typeof parsedData.invoiceNumber !== 'string' ||
+        typeof parsedData.itemsDescription !== 'string' ||
+        typeof parsedData.totalAmount !== 'number'
+    ) {
+        throw new Error("La respuesta de la IA no coincide con el esquema esperado.");
+    }
+
+    return parsedData;
+
+  } catch (error) {
+    console.error("Error al procesar la factura con Gemini:", error);
+    // Improved error handling to give more specific feedback to the user.
+    let userMessage = "No se pudieron extraer los datos. Inténtelo con una imagen más clara o un archivo diferente.";
+    if (error instanceof Error) {
+        if (error.message.includes('400')) {
+            userMessage = "Hubo un problema con el archivo enviado. Asegúrese de que sea una imagen o PDF válido y no esté dañado.";
+        } else if (error.message.includes('SAFETY')) {
+            userMessage = "El contenido del archivo fue bloqueado por razones de seguridad. Por favor, utilice un archivo diferente.";
+        } else if (error.message.includes('API key')) {
+            userMessage = "La clave de API no es válida o ha caducado. Por favor, verifique la configuración."
+        }
+    }
+    throw new Error(userMessage);
+  }
+};
+.vercel

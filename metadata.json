@@ -1,0 +1,5 @@
+{
+  "name": "Gestor de Gastos de Proyectos Comunitarios",
+  "description": "Una aplicación moderna para gestionar los gastos de proyectos comunitarios, extrayendo datos de facturas y recibos mediante IA para un seguimiento y control eficientes.",
+  "requestFramePermissions": []
+}
