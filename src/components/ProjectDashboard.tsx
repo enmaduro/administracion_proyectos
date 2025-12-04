@@ -78,7 +78,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
             type,
         };
         setHistory(prev => [newEntry, ...prev]);
-    }, [setHistory]);
+    }, []);
 
     const handleProjectSetup = (info: ProjectInfo) => {
         setProjectInfo(info);
@@ -193,7 +193,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
             setError({ message: errorMessage });
             setIsLoading(false);
         }
-    }, [invoices, setInvoices, addHistoryEntry]);
+    }, [invoices, addHistoryEntry]);
 
     const handleAddPhase = (phaseName: string) => {
         const newPhase: Phase = {
@@ -219,7 +219,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
                 inv.id === invoiceId ? { ...inv, phaseId: phaseId || undefined } : inv
             );
         });
-    }, [setInvoices, phases, addHistoryEntry]);
+    }, [phases, addHistoryEntry]);
 
     const handleViewInvoice = useCallback((invoice: Invoice) => {
         setSelectedInvoice(invoice);
@@ -231,7 +231,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
             addHistoryEntry(`Factura Nro. ${invoiceToDelete.invoiceNumber} de "${invoiceToDelete.supplierName}" fue eliminada.`, 'invoice');
         }
         setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
-    }, [invoices, setInvoices, addHistoryEntry]);
+    }, [invoices, addHistoryEntry]);
 
     const handleSaveInvoice = (updated: Invoice) => {
         setInvoices(prev => prev.map(inv => inv.id === updated.id ? updated : inv));
