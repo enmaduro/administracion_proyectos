@@ -193,7 +193,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
             setError({ message: errorMessage });
             setIsLoading(false);
         }
-    }, [invoices, addHistoryEntry]);
+    }, []);
 
     const handleAddPhase = (phaseName: string) => {
         const newPhase: Phase = {
@@ -231,7 +231,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ projectId, onBack }
             addHistoryEntry(`Factura Nro. ${invoiceToDelete.invoiceNumber} de "${invoiceToDelete.supplierName}" fue eliminada.`, 'invoice');
         }
         setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
-    }, [invoices, addHistoryEntry]);
+    }, []);
 
     const handleSaveInvoice = (updated: Invoice) => {
         setInvoices(prev => prev.map(inv => inv.id === updated.id ? updated : inv));
