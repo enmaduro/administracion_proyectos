@@ -23,6 +23,8 @@ function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
         return valueToStore;
       });
+    } catch (error) {
+      console.error(`Error setting localStorage key "${key}":`, error);
     }
   }, [key]);
 
@@ -69,7 +71,7 @@ const App: React.FC = () => {
         // Actualizar estado
         setProjects([newProject]);
         // Opcional: Auto-seleccionar el proyecto migrado
-        // setActiveProjectId(defaultId); 
+        setActiveProjectId(defaultId);
         console.log("Migración completada.");
       }
     };
@@ -120,7 +122,8 @@ const App: React.FC = () => {
   if (activeProjectId) {
     return (
       <ProjectDashboard
-        projectId={activeProjectId}
+        key={activeProjectId}
+        activeProjectId={activeProjectId}
         onBack={handleBackToProjects}
       />
     );

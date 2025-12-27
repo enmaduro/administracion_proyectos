@@ -3,6 +3,7 @@ export interface ProjectInfo {
     consultationNumber: string;
     year: string;
     budget?: number;
+    geminiApiKey?: string;
 }
 
 export interface Phase {
@@ -36,4 +37,21 @@ export interface HistoryEntry {
     timestamp: string;
     message: string;
     type: 'invoice' | 'phase' | 'project' | 'system';
+}
+
+export interface ChatEntry {
+    id: string;
+    sender: 'user' | 'assistant';
+    text: string;
+    timestamp: string;
+}
+
+export interface BudgetItem {
+    id: string;
+    item: string;
+    description: string;
+    provider: string;
+    unit: string;
+    quantity: number;
+    unitPrice: number;
 }

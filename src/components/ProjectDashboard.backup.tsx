@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry, BudgetItem } from '../types';
-import BudgetBase from './BudgetBase';
-import { extractInvoiceDataLocal, extractInvoiceDataCloud } from '../services/ocrService';
+import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry } from '../types';
+import { extractInvoiceData, chatWithGemini } from '../services/geminiService';
 import { exportProjectData, validateAndParseBackup } from '../services/dataService';
 import InvoiceUploader from './InvoiceUploader';
 import InvoicesTable from './InvoicesTable';
@@ -13,6 +12,8 @@ import InvoiceViewerModal from './InvoiceViewerModal';
 import ManualInvoiceModal from './ManualInvoiceModal';
 import Header from './Header';
 import ProjectSetup from './ProjectSetup';
+import ChatHistoryModal from './ChatHistoryModal';
+import ApiKeyModal from './ApiKeyModal';
 import Footer from './Footer';
 
 interface ProjectDashboardProps {
@@ -74,10 +75,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
     const [phases, setPhases] = usePersistentState<Phase[]>(`project-${activeProjectId}-phases`, []);
     const [history, setHistory] = usePersistentState<HistoryEntry[]>(`project-${activeProjectId}-history`, []);
     const [chatHistory, setChatHistory] = usePersistentState<ChatEntry[]>(`project-${activeProjectId}-chat-history`, []);
-    const [budgetItems, setBudgetItems] = usePersistentState<BudgetItem[]>(`project-${activeProjectId}-budget-items`, []);
 
     // UI State
-    const [activeView, setActiveView] = useState<'invoices' | 'budget'>('invoices');
     const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<{ message: string; duplicateInvoiceId?: string } | null>(null);
@@ -88,15 +87,15 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
 
-    // Chat UI State (Removed)
-    // const [isChatLoading, setIsChatLoading] = useState(false); // Removed
+    // Chat UI State
+    const [isChatLoading, setIsChatLoading] = useState(false);
 
     // Debug Log State
     const [isDebugLogVisible, setIsDebugLogVisible] = useState<boolean>(false);
     const [debugLog, setDebugLog] = useState<string[]>(['Log de depuración iniciado.']);
 
-    // Config State (Removed)
-    // const [isConfigOpen, setIsConfigOpen] = useState(false); // Removed
+    // Config State
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
 
     // Invoice Editing/Manual Entry State
 
@@ -118,15 +117,75 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
         setHistory(prev => [newEntry, ...prev]);
     }, [setHistory]);
 
-    // handleSendMessage removed - Chat disabled
+    const handleSendMessage = async (message: string) => {
+        const userMsg: ChatEntry = {
+            id: Date.now().toString(),
+            sender: 'user',
+            text: message,
+            timestamp: new Date().toISOString()
+        };
+        setChatHistory(prev => [...prev, userMsg]);
+        setIsChatLoading(true);
 
+        try {
+            const totalAmountVal = invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
+            const context = {
+                projectInfo,
+                invoices,
+                phases,
+                totalAmount: totalAmountVal
+            };
+            const responseText = await chatWithGemini(message, context, projectInfo?.geminiApiKey);
+
+            const aiMsg: ChatEntry = {
+                id: (Date.now() + 1).toString(),
+                sender: 'assistant',
+                text: responseText,
+                timestamp: new Date().toISOString()
+            };
+            setChatHistory(prev => [...prev, aiMsg]);
+        } catch (error) {
+            console.error("Error en chat:", error);
+            const errorMsg: ChatEntry = {
+                id: (Date.now() + 1).toString(),
+                sender: 'assistant',
+                text: "Lo siento, tuve un problema al procesar tu solicitud.",
+                timestamp: new Date().toISOString()
+            };
+            setChatHistory(prev => [...prev, errorMsg]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
 
     const handleProjectSetup = (info: ProjectInfo) => {
         setProjectInfo(info);
         addHistoryEntry(`Proyecto "${info.communityName}" iniciado.`, 'project');
     };
 
-    // handleUpdateApiKey removed - API Keys no longer used
+    const handleUpdateApiKey = (newKey: string) => {
+        if (projectInfo) {
+            // Clean the API key: trim whitespace and remove invisible characters
+            const cleanedKey = newKey.trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+            // Validate API key format (should start with AIza)
+            if (cleanedKey && !cleanedKey.startsWith('AIza')) {
+                alert('⚠️ La API Key debe comenzar con "AIza". Por favor verifica que copiaste la clave correctamente.');
+                return;
+            }
+
+            // Update project info with cleaned key
+            setProjectInfo({ ...projectInfo, geminiApiKey: cleanedKey });
+            addHistoryEntry(`API Key ${cleanedKey ? 'actualizada' : 'eliminada'} correctamente.`, 'system');
+            setIsConfigOpen(false);
+
+            if (cleanedKey) {
+                alert('✅ Clave actualizada correctamente. Intenta subir la factura nuevamente.');
+            } else {
+                alert('ℹ️ API Key eliminada. Se usará la clave compartida (si está disponible).');
+            }
+        }
+    };
 
     const handleResetProject = () => {
         if (window.confirm("¿Estás seguro de que quieres reiniciar este proyecto? Se borrarán todos los datos.")) {
@@ -136,42 +195,20 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
             setPhases([]);
             setHistory([]);
             setChatHistory([]);
-            setChatHistory([]);
-            setBudgetItems([]);
             setActivePhaseId(null);
-            setActiveView('invoices');
         }
     };
-
-    const [useCloudOCR, setUseCloudOCR] = useState(true); // Default to Cloud
 
     const handleFileUpload = useCallback(async (file: File) => {
         setIsLoading(prev => { if (prev) return prev; return true; });
         setError(null);
-        addDebugLog(`Iniciando procesamiento: ${file.name} (${useCloudOCR ? 'NUBE' : 'LOCAL'})`);
-
         try {
-            let extractedData;
-
-            if (useCloudOCR) {
-                try {
-                    addDebugLog("Intentando OCR Nube...");
-                    extractedData = await extractInvoiceDataCloud(file);
-                    addDebugLog("Éxito OCR Nube.");
-                } catch (cloudErr) {
-                    console.warn("Fallo Nube, usando Local", cloudErr);
-                    addDebugLog(`Fallo Nube (${cloudErr instanceof Error ? cloudErr.message : String(cloudErr)}). Usando Local.`);
-                    extractedData = await extractInvoiceDataLocal(file);
-                }
-            } else {
-                extractedData = await extractInvoiceDataLocal(file);
-            }
-
-            const extractedDataStr = `Datos extraídos: ${JSON.stringify(extractedData)}`;
+            const extractedData = await extractInvoiceData(file, projectInfo?.geminiApiKey);
+            const extractedDataStr = `Datos extraídos por IA: ${JSON.stringify(extractedData)}`;
             addDebugLog(extractedDataStr);
 
-            if (!extractedData.rif?.trim() && !extractedData.invoiceNumber?.trim() && extractedData.totalAmount === 0) {
-                throw new Error("No se pudieron detectar datos claros en el documento. Intenta con una imagen más nítida.");
+            if (!extractedData.rif?.trim() || !extractedData.invoiceNumber?.trim()) {
+                throw new Error("Datos incompletos de la IA.");
             }
 
             // Simple duplicate check
@@ -196,7 +233,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                     fileName: file.name,
                 };
                 setInvoices(prev => [newInvoice, ...prev]);
-                addHistoryEntry(`Factura Nro. ${newInvoice.invoiceNumber} procesada (Local).`, 'invoice');
+                addHistoryEntry(`Factura Nro. ${newInvoice.invoiceNumber} procesada.`, 'invoice');
                 setIsLoading(false);
             };
         } catch (err) {
@@ -224,20 +261,6 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
         if (inv) addHistoryEntry(`Factura ${inv.invoiceNumber} eliminada.`, 'invoice');
         setInvoices(prev => prev.filter(i => i.id !== invoiceId));
     }, [invoices, addHistoryEntry, setInvoices]);
-
-    // Budget Handlers
-    const handleAddBudgetItem = (item: BudgetItem) => {
-        setBudgetItems(prev => [...prev, item]);
-        addHistoryEntry(`Item "${item.item}" agregado al presupuesto base.`, 'system');
-    };
-
-    const handleUpdateBudgetItem = (updatedItem: BudgetItem) => {
-        setBudgetItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    };
-
-    const handleDeleteBudgetItem = (itemId: string) => {
-        setBudgetItems(prev => prev.filter(item => item.id !== itemId));
-    };
 
 
 
@@ -322,15 +345,12 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                 projectInfo={projectInfo}
                 onShowSummary={() => setIsSummaryVisible(true)}
                 onShowHistory={() => setIsHistoryVisible(true)}
-                // Chat and Config props removed
+                onShowChatHistory={() => setIsChatHistoryVisible(true)}
                 onResetProject={handleResetProject}
                 onBack={onBack}
                 onExport={handleExport}
                 onImport={handleImport}
-                onShowBudget={() => setActiveView('budget')}
-                onShowInvoices={() => setActiveView('invoices')}
-                activeView={activeView}
-            // onConfigure removed
+                onConfigure={() => setIsConfigOpen(true)}
             />
             <main className="container mx-auto p-4 md:p-8">
                 <PhaseManager
@@ -340,117 +360,90 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                     onAddPhase={handleAddPhase}
                 />
 
-                {activeView === 'budget' ? (
-                    <BudgetBase
-                        items={budgetItems}
-                        onAddItem={handleAddBudgetItem}
-                        onUpdateItem={handleUpdateBudgetItem}
-                        onDeleteItem={handleDeleteBudgetItem}
-                    />
-                ) : (
-                    <>
-                        {projectInfo.budget !== undefined && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500">
-                                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Presupuesto</h3>
-                                    <p className="text-2xl font-bold dark:text-white">Bs. {projectInfo.budget.toLocaleString('es-VE')}</p>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-orange-500">
-                                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Gastado</h3>
-                                    <p className="text-2xl font-bold text-orange-600">Bs. {totalAmount.toLocaleString('es-VE')}</p>
-                                </div>
-                                <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 ${remainingBudget && remainingBudget >= 0 ? 'border-green-500' : 'border-red-500'}`}>
-                                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Restante</h3>
-                                    <p className={`text-2xl font-bold ${remainingBudget && remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        Bs. {remainingBudget?.toLocaleString('es-VE')}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-                            <InvoiceUploader
-                                onFileUpload={handleFileUpload}
-                                isLoading={isLoading}
-                                error={error}
-                                onErrorDismiss={() => setError(null)}
-                            />
-
-                            <div className="flex justify-center mb-6 mt-2">
-                                <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600">
-                                    <input
-                                        type="checkbox"
-                                        id="cloudOCR"
-                                        checked={useCloudOCR}
-                                        onChange={(e) => setUseCloudOCR(e.target.checked)}
-                                        className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                        disabled={isLoading}
-                                    />
-                                    <label htmlFor="cloudOCR" className="cursor-pointer select-none text-sm font-medium text-gray-700 dark:text-gray-200">
-                                        Usar Lectura en la Nube (Mejor precisión, requiere Internet)
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="flex justify-center mb-4">
-                                <button
-                                    onClick={() => {
-                                        setManualInvoiceToEdit(undefined);
-                                        setIsManualInvoiceVisible(true);
-                                    }}
-                                    className="flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    Registrar Gasto Manualmente
-                                </button>
-                            </div>
-
-                            <div className="mt-6">
-                                <div className="flex justify-between items-center">
-                                    <button
-                                        onClick={() => setIsDebugLogVisible(prev => !prev)}
-                                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                    >
-                                        {isDebugLogVisible ? 'Ocultar' : 'Mostrar'} Log de Depuración
-                                    </button>
-                                    {isDebugLogVisible && (
-                                        <button
-                                            onClick={() => setDebugLog(['Log de depuración reiniciado.'])}
-                                            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-white"
-                                        >
-                                            Limpiar Log
-                                        </button>
-                                    )}
-                                </div>
-                                {isDebugLogVisible && (
-                                    <div className="mt-2 p-4 bg-gray-900 dark:bg-black text-white rounded-lg max-h-60 overflow-y-auto font-mono text-xs border border-gray-700">
-                                        <pre><code>{debugLog.join('\n')}</code></pre>
-                                    </div>
-                                )}
-                            </div>
+                {projectInfo.budget !== undefined && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Presupuesto</h3>
+                            <p className="text-2xl font-bold dark:text-white">Bs. {projectInfo.budget.toLocaleString('es-VE')}</p>
                         </div>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-orange-500">
+                            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Gastado</h3>
+                            <p className="text-2xl font-bold text-orange-600">Bs. {totalAmount.toLocaleString('es-VE')}</p>
+                        </div>
+                        <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 ${remainingBudget && remainingBudget >= 0 ? 'border-green-500' : 'border-red-500'}`}>
+                            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Restante</h3>
+                            <p className={`text-2xl font-bold ${remainingBudget && remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Bs. {remainingBudget?.toLocaleString('es-VE')}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
-                        <InvoicesTable
-                            invoices={filteredInvoices}
-                            phases={phases}
-                            projectInfo={projectInfo}
-                            onView={handleViewInvoice}
-                            onDelete={handleDeleteInvoice}
-                            onUpdateInvoicePhase={handleUpdateInvoicePhase}
-                            onEdit={(inv) => {
-                                setManualInvoiceToEdit(inv);
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+                    <InvoiceUploader
+                        onFileUpload={handleFileUpload}
+                        isLoading={isLoading}
+                        error={error}
+                        onErrorDismiss={() => setError(null)}
+                    />
+                    <div className="flex justify-center mb-4">
+                        <button
+                            onClick={() => {
+                                setManualInvoiceToEdit(undefined);
                                 setIsManualInvoiceVisible(true);
                             }}
-                            totalAmount={totalAmount}
-                            searchTerm={searchTerm}
-                            onSearchTermChange={setSearchTerm}
-                            filterDate={filterDate}
-                            onFilterDateChange={setFilterDate}
-                            highlightedInvoiceId={error?.duplicateInvoiceId}
-                        />
-                    </>
-                )}
+                            className="flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Registrar Gasto Manualmente
+                        </button>
+                    </div>
+
+                    <div className="mt-6">
+                        <div className="flex justify-between items-center">
+                            <button
+                                onClick={() => setIsDebugLogVisible(prev => !prev)}
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                {isDebugLogVisible ? 'Ocultar' : 'Mostrar'} Log de Depuración
+                            </button>
+                            {isDebugLogVisible && (
+                                <button
+                                    onClick={() => setDebugLog(['Log de depuración reiniciado.'])}
+                                    className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                                >
+                                    Limpiar Log
+                                </button>
+                            )}
+                        </div>
+                        {isDebugLogVisible && (
+                            <div className="mt-2 p-4 bg-gray-900 dark:bg-black text-white rounded-lg max-h-60 overflow-y-auto font-mono text-xs border border-gray-700">
+                                <pre><code>{debugLog.join('\n')}</code></pre>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <InvoicesTable
+                    invoices={filteredInvoices}
+                    phases={phases}
+                    projectInfo={projectInfo}
+                    onView={handleViewInvoice}
+                    onDelete={handleDeleteInvoice}
+                    onUpdateInvoicePhase={handleUpdateInvoicePhase}
+                    onEdit={(inv) => {
+                        setManualInvoiceToEdit(inv);
+                        setIsManualInvoiceVisible(true);
+                    }}
+                    totalAmount={totalAmount}
+                    searchTerm={searchTerm}
+                    onSearchTermChange={setSearchTerm}
+                    filterDate={filterDate}
+                    onFilterDateChange={setFilterDate}
+                    highlightedInvoiceId={error?.duplicateInvoiceId}
+                />
             </main>
 
             {selectedInvoice && (
@@ -487,6 +480,24 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                 <HistoryLogModal
                     history={history}
                     onClose={() => setIsHistoryVisible(false)}
+                />
+            )}
+
+            {isChatHistoryVisible && (
+                <ChatHistoryModal
+                    history={chatHistory}
+                    onClose={() => setIsChatHistoryVisible(false)}
+                    onSendMessage={handleSendMessage}
+                    isLoading={isChatLoading}
+                />
+            )}
+
+
+            {isConfigOpen && (
+                <ApiKeyModal
+                    currentApiKey={projectInfo?.geminiApiKey}
+                    onSave={handleUpdateApiKey}
+                    onClose={() => setIsConfigOpen(false)}
                 />
             )}
 

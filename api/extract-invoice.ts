@@ -47,17 +47,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("✅ Modelo Gemini obtenido");
 
     const prompt = `
-      Eres un asistente experto en facturas venezolanas.
-      Analiza la imagen o documento PDF proporcionado.
-      RESPONDE ÚNICAMENTE con un JSON válido, sin texto adicional.
-      Extrae EXACTAMENTE estos campos como JSON:
+      Eres un asistente experto en facturas venezolanas. Tu tarea es extraer datos precisos de la imagen o PDF proporcionado.
+      
+      INSTRUCCIONES CRÍTICAS:
+      1. **supplierName**: Busca el nombre legal o razón social del emisor. Busca etiquetas como "Razón Social", "Emisor", "Vendedor", o el nombre en el encabezado. NO uses el nombre del cliente ("A nombre de").
+      2. **totalAmount**: Busca el "Total a Pagar" definitivo. IGNORA subtotales, bases imponibles, o montos de impuestos (IVA) si no son el total final. Si hay varios totales (ej. USD y Bs), prefiere el monto en Bolívares (Bs) si está claro, o el monto principal destacado. Devuelve SOLO el número (ej. 1234.56).
+      3. **rif**: Busca el RIF del emisor (J-xxxxxxxxx, V-xxxxxxxxx, etc).
+      
+      RESPONDE ÚNICAMENTE con un JSON válido con esta estructura exacta:
       {
         "invoiceDate": "AAAA-MM-DD",
-        "supplierName": "nombre del proveedor",
-        "rif": "con formato como J-12345678-9",
-        "invoiceNumber": "número de factura",
-        "itemsDescription": "descripción de los ítems",
-        "totalAmount": número, sin símbolos de moneda
+        "supplierName": "Nombre del Proveedor",
+        "rif": "J-12345678-9",
+        "invoiceNumber": "000123",
+        "itemsDescription": "Resumen de compra",
+        "totalAmount": 1234.56
       }
     `;
 

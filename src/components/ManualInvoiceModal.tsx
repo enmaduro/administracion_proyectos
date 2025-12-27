@@ -6,9 +6,10 @@ interface ManualInvoiceModalProps {
     onSave: (invoice: Invoice) => void;
     onClose: () => void;
     existingInvoices: Invoice[];
+    invoiceToEdit?: Invoice;
 }
 
-const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose, existingInvoices }) => {
+const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose, existingInvoices, invoiceToEdit }) => {
     const [formData, setFormData] = useState({
         invoiceDate: new Date().toISOString().split('T')[0],
         supplierName: '',
@@ -17,6 +18,19 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
         itemsDescription: '',
         totalAmount: '',
     });
+
+    useEffect(() => {
+        if (invoiceToEdit) {
+            setFormData({
+                invoiceDate: invoiceToEdit.invoiceDate,
+                supplierName: invoiceToEdit.supplierName,
+                rif: invoiceToEdit.rif,
+                invoiceNumber: invoiceToEdit.invoiceNumber,
+                itemsDescription: invoiceToEdit.itemsDescription,
+                totalAmount: invoiceToEdit.totalAmount.toString(),
+            });
+        }
+    }, [invoiceToEdit]);
 
     const [suggestions, setSuggestions] = useState<{ name: string; rif: string }[]>([]);
 
@@ -57,16 +71,16 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
         e.preventDefault();
 
         const newInvoice: Invoice = {
-            id: new Date().toISOString() + Math.random(),
+            id: invoiceToEdit ? invoiceToEdit.id : new Date().toISOString() + Math.random(),
             invoiceDate: formData.invoiceDate,
             supplierName: formData.supplierName,
             rif: formData.rif,
             invoiceNumber: formData.invoiceNumber,
             itemsDescription: formData.itemsDescription,
             totalAmount: parseFloat(formData.totalAmount),
-            fileDataUrl: '', // No hay archivo físico
-            fileType: 'manual',
-            fileName: 'Registro Manual',
+            fileDataUrl: invoiceToEdit ? invoiceToEdit.fileDataUrl : '', // Mantener archivo si existe
+            fileType: invoiceToEdit ? invoiceToEdit.fileType : 'manual',
+            fileName: invoiceToEdit ? invoiceToEdit.fileName : 'Registro Manual',
         };
 
         onSave(newInvoice);

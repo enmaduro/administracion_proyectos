@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProjectInfo } from '../types.ts';
+import { ProjectInfo } from '../types';
 
 interface ProjectSetupProps {
   onProjectSubmit: (info: ProjectInfo) => void;
@@ -10,6 +10,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
   const [consultationNumber, setConsultationNumber] = useState('');
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [budget, setBudget] = useState('');
+  const [apiKey, setApiKey] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +19,8 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
         communityName,
         consultationNumber,
         year,
-        budget: budget ? parseFloat(budget) : undefined
+        budget: budget ? parseFloat(budget) : undefined,
+        geminiApiKey: apiKey.trim() || undefined
       });
     }
   };
@@ -95,6 +97,25 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
                 step="0.01"
               />
             </div>
+          </div>
+          <div>
+            <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tu Clave de API de Gemini (Opcional)
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Si la dejas en blanco, se usará la clave compartida de la aplicación.
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                Obtener mi clave gratis aquí
+              </a>.
+            </p>
+            <input
+              type="password"
+              id="apiKey"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              placeholder="Pegue su clave aquí (comienza con AIza...)"
+            />
           </div>
           <button
             type="submit"

@@ -13,10 +13,10 @@ const Footer: React.FC = () => {
                 <div className="mt-2 text-sm text-gray-500 dark:text-gray-500">
                     <p>Cualquier duda o recomendación al correo:</p>
                     <a
-                        href="mailto:productivapresidenteobrero@gmail.com"
+                        href="mailto:adm.proy.2025@gmail.com"
                         className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                     >
-                        productivapresidenteobrero@gmail.com
+                        adm.proy.2025@gmail.com
                     </a>
                 </div>
                 <p className="mt-4 text-xs text-gray-400 dark:text-gray-600">

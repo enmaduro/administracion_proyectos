@@ -84,7 +84,7 @@ const InvoiceUploader: React.FC<Props> = ({ onFileUpload, isLoading, error, onEr
           type="file"
           ref={fileInputRef}
           onChange={handleFileInput}
-          accept="image/*,application/pdf" // ✅ Imágenes y PDF
+          accept="image/*,.pdf,application/pdf" // ✅ Imágenes y PDF
           className="hidden"
         />
         <div className="flex flex-col items-center justify-center">
