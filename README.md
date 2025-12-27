@@ -44,7 +44,6 @@ Sigue estos pasos para ejecutar el proyecto en tu máquina local y desplegarlo e
 
 - **Node.js**: Debes tener Node.js instalado. Puedes descargarlo desde [nodejs.org](https://nodejs.org/).
 - **Cuenta de GitHub**: Necesaria para desplegar la aplicación.
-- **Clave de API de Gemini**: Obtén una clave de API desde [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### Configuración Local
 
@@ -102,6 +101,7 @@ Esto iniciará un servidor local (normalmente en `http://localhost:5173`). La pr
 
 - **Frontend**: React, TypeScript, Vite
 - **Estilos**: Tailwind CSS
-- **IA**: Google Gemini API
+- **Procesamiento de Facturas**: Tesseract.js (OCR Local)
+- **Desarrollo Asistido**: Google Antigravity
 - **Despliegue**: GitHub Pages
 - **Offline/Instalación**: Progressive Web App (PWA) con Service Workers
