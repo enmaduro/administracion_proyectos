@@ -269,7 +269,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
 
     const handleExport = () => {
         if (!projectInfo) return;
-        exportProjectData(projectInfo, invoices, phases, history, chatHistory);
+        exportProjectData(projectInfo, invoices, phases, history, chatHistory, budgetItems);
         addHistoryEntry('Respaldo del proyecto exportado exitosamente.', 'system');
     };
 
@@ -300,7 +300,9 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                 setInvoices(backup.invoices);
                 setPhases(backup.phases);
                 setHistory(backup.history);
+
                 setChatHistory(backup.chatHistory || []);
+                setBudgetItems(backup.budgetItems || []);
 
                 addHistoryEntry('Proyecto restaurado desde respaldo.', 'system');
                 alert('¡Restauración exitosa!');

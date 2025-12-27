@@ -1,4 +1,4 @@
-import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry } from '../types';
+import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry, BudgetItem } from '../types';
 import { saveAs } from 'file-saver';
 
 export interface ProjectDataBackup {
@@ -9,6 +9,7 @@ export interface ProjectDataBackup {
     phases: Phase[];
     history: HistoryEntry[];
     chatHistory: ChatEntry[];
+    budgetItems?: BudgetItem[];
 }
 
 export const exportProjectData = (
@@ -16,7 +17,8 @@ export const exportProjectData = (
     invoices: Invoice[],
     phases: Phase[],
     history: HistoryEntry[],
-    chatHistory: ChatEntry[]
+    chatHistory: ChatEntry[],
+    budgetItems: BudgetItem[] = []
 ): void => {
     const backup: ProjectDataBackup = {
         version: 1,
@@ -25,7 +27,8 @@ export const exportProjectData = (
         invoices,
         phases,
         history,
-        chatHistory
+        chatHistory,
+        budgetItems
     };
 
     const dataStr = JSON.stringify(backup, null, 2);
