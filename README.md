@@ -24,10 +24,10 @@ Una aplicación web progresiva (PWA) moderna, intuitiva y potente, diseñada par
 
 ## 📖 ¿Cómo Usar la Aplicación? (Para Usuarios)
 
-1.  **Configura tu Clave de API**: Al abrir la aplicación por primera vez, se te pedirá tu clave de API de Google Gemini. Pégala en el campo correspondiente. Puedes obtener una clave gratuita desde [Google AI Studio](https://aistudio.google.com/app/apikey). Tu clave se guardará de forma segura solo en tu navegador.
-2.  **Configura tu Proyecto**: A continuación, introduce el nombre de tu comunidad, el número de proyecto y el año.
+1.  **Configura tu Proyecto**: Al abrir la aplicación, introduce el nombre de tu comunidad, el número de proyecto y el año en la configuración inicial.
+
 3.  **Crea las Fases**: En la pantalla principal, añade las fases o etapas que componen tu proyecto (ej: "Materiales", "Mano de Obra", "Transporte").
-4.  **Sube una Factura**: Arrastra o selecciona el archivo (imagen o PDF) de una factura. La IA analizará el documento y llenará los datos por ti.
+3.  **Sube una Factura**: La aplicación permite leer facturas directamente desde archivos **PDF o Imágenes**. Simplemente arrastra el archivo o haz clic en el área de carga. El sistema procesará el documento automáticamente sin necesidad de claves externas.
 5.  **Asigna a una Fase**: En la tabla, usa el menú desplegable en cada fila para asignar la factura a la fase correcta.
 6.  **Consulta y Reporta**:
     - Usa los filtros para encontrar gastos específicos.
@@ -96,21 +96,7 @@ Esto iniciará un servidor local (normalmente en `http://localhost:5173`). La pr
 
 ---
 
-## 🔒 Consideraciones de Seguridad
 
-**¡MUY IMPORTANTE!**
-
-La aplicación guarda tu clave de API de Gemini en el almacenamiento local del navegador. Esto significa que **alguien con conocimientos técnicos podría encontrar tu clave y usarla**, generando costos en tu cuenta de Google si la aplicación está desplegada públicamente.
-
-Para mitigar este riesgo, es **CRUCIAL** que restrinjas tu clave de API:
-
-1.  Ve a tu panel de [Google AI Studio](https://aistudio.google.com/).
-2.  Busca la clave de API que estás utilizando.
-3.  Edita sus restricciones y en la sección de **"Restricciones de sitios web"**, añade la URL donde desplegaste tu aplicación (ej. `https://enmaduro.github.io/administracion_proyectos/*`).
-
-Esto asegurará que tu clave solo pueda ser usada desde tu aplicación.
-
----
 
 ## 💻 Tecnologías Utilizadas
 
