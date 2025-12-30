@@ -8,31 +8,30 @@ Una aplicación web progresiva (PWA) moderna, intuitiva y potente, diseñada par
 
 ## 🚀 Características Principales
 
-- **Extracción de Datos con IA**: Sube una foto o un PDF de una factura, y la IA de Google Gemini extraerá automáticamente la fecha, proveedor, RIF, número de factura, descripción y monto total.
-- **Organización por Fases**: Crea y gestiona fases o etapas del proyecto (ej. "Fundaciones", "Plomería", "Electricidad") y asigna cada gasto a su fase correspondiente.
-- **Gestión Completa de Facturas**: Visualiza todos los gastos en una tabla interactiva. Busca por proveedor, filtra por fecha y elimina registros fácilmente.
-- **Prevención de Duplicados**: El sistema valida automáticamente que no se ingrese la misma factura dos veces para el mismo proveedor.
-- **Reportes y Exportación**:
-    - **Resumen General**: Obtén un desglose detallado de los gastos por cada fase y un total general del proyecto.
-    - **Impresión**: Imprime tanto la tabla principal de gastos como el resumen general con un formato optimizado.
-    - **Exportar a CSV**: Descarga todos los datos de las facturas en un archivo CSV para usarlo en hojas de cálculo como Excel o Google Sheets.
-- **Diseño Moderno y Responsivo**: Interfaz limpia, fácil de usar y que se adapta a cualquier dispositivo: teléfonos, tabletas y computadoras.
-- **Funcionalidad Offline (PWA)**: Una vez cargada, la aplicación puede funcionar sin conexión a internet. Puede ser "instalada" en la pantalla de inicio de cualquier dispositivo para un acceso rápido, como una app nativa.
-- **Almacenamiento Local**: Todos los datos se guardan de forma segura en tu propio dispositivo, garantizando tu privacidad.
+- **Gestión Multi-proyecto**: Administra múltiples proyectos de forma independiente desde una pantalla de inicio centralizada.
+- **Control de Presupuesto Detallado**: Define un presupuesto total y desglósalo por ítems. Visualiza métricas en tiempo real: Presupuesto Total, Ejecutado y Saldo Disponible.
+- **Extracción de Datos Avanzada (IA/OCR)**: Digitaliza facturas y recibos (PDF o Imágenes). Elige entre procesamiento local (privacidad total) o en la nube (máxima precisión).
+- **Organización por Fases**: Estructura tus proyectos en fases (ej. Fundaciones, Electricidad, Acabados) para un control de gastos segmentado.
+- **Exportación Versátil**: Genera reportes en formato Excel (.xlsx) para análisis contable o exporta la base de datos completa en JSON para respaldos.
+- **Reportes y Reportaje**: Resúmenes detallados con desglose por fases, optimizados para impresión física o guardado en PDF.
+- **Versión de Escritorio**: Además de ser una PWA, incluye un instalador nativo para Windows basado en Electron para un acceso más robusto.
+- **Prevención de Errores**: Sistema de alertas para facturas duplicadas y validación de montos según el presupuesto disponible.
+- **Privacidad y Seguridad Local**: Tus datos financieros no viajan a servidores externos; todo se almacena de forma segura en tu propio dispositivo.
+- **Diseño Premium y Responsivo**: Interfaz moderna con soporte nativo para dispositivos móviles y computadoras, con micro-animaciones y visualizaciones claras.
 
 ---
 
 ## 📖 ¿Cómo Usar la Aplicación? (Para Usuarios)
 
-1.  **Configura tu Proyecto**: Al abrir la aplicación, introduce el nombre de tu comunidad, el número de proyecto y el año en la configuración inicial.
-
-3.  **Crea las Fases**: En la pantalla principal, añade las fases o etapas que componen tu proyecto (ej: "Materiales", "Mano de Obra", "Transporte").
-3.  **Sube una Factura**: La aplicación permite leer facturas directamente desde archivos **PDF o Imágenes**. Simplemente arrastra el archivo o haz clic en el área de carga. El sistema procesará el documento automáticamente sin necesidad de claves externas.
-5.  **Asigna a una Fase**: En la tabla, usa el menú desplegable en cada fila para asignar la factura a la fase correcta.
-6.  **Consulta y Reporta**:
-    - Usa los filtros para encontrar gastos específicos.
-    - Haz clic en el botón "Ver Resumen General" para obtener un reporte completo.
-    - Usa los botones "Imprimir" o "Exportar CSV" para generar tus informes.
+1.  **Gestión de Proyectos**: Al iniciar, verás un listado de tus proyectos. Puedes crear uno nuevo o seleccionar uno existente.
+2.  **Configuración Inicial**: Dentro de un proyecto nuevo, define el nombre de la comunidad, el número de proyecto, el año y el **Presupuesto Total**.
+3.  **Configura el Presupuesto**: Usa la pestaña "Presupuesto" para desglosar tus fondos en ítems específicos.
+4.  **Crea las Fases**: Añade las etapas de obra (ej: Fundaciones, Mano de Obra) para organizar tus gastos.
+5.  **Carga de Gastos**: Sube facturas en **PDF o Imagen**. Puedes activar el "Modo Nube" para una lectura más precisa de datos complejos.
+6.  **Asigna y Verifica**: Asegúrate de asignar cada factura a una fase. El sistema restará automáticamente el monto del presupuesto disponible.
+7.  **Reportes**:
+    - Genera el reporte general para ver el estado financiero del proyecto.
+    - Exporta a Excel para compartir con la comunidad o entes auditores.
 
 ---
 
@@ -99,9 +98,11 @@ Esto iniciará un servidor local (normalmente en `http://localhost:5173`). La pr
 
 ## 💻 Tecnologías Utilizadas
 
-- **Frontend**: React, TypeScript, Vite
-- **Estilos**: Tailwind CSS
-- **Procesamiento de Facturas**: Tesseract.js (OCR Local)
+- **Núcleo**: React 19, TypeScript, Vite
+- **Estilos**: Vanilla CSS con Tailwind CSS
+- **App de Escritorio**: Electron 33+ (con instalador NSIS)
+- **Procesamiento de Facturas**: Tesseract.js (OCR Local) y Google Gemini AI (Cloud OCR)
+- **Manejo de PDF y Datos**: PDF.js, XLSX, File-Saver
 - **Desarrollo Asistido**: Google Antigravity
-- **Despliegue**: GitHub Pages
-- **Offline/Instalación**: Progressive Web App (PWA) con Service Workers
+- **Despliegue Web**: GitHub Pages
+- **Funcionalidad Progresiva**: PWA (Service Workers y Manifiesto)
