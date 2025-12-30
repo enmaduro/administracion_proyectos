@@ -1,6 +1,7 @@
 // src/components/ManualInvoiceModal.tsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { Invoice } from '../types';
+import React from 'react';
+import { Invoice } from '@/types';
+import { useManualInvoiceForm } from '@hooks/useManualInvoiceForm';
 
 interface ManualInvoiceModalProps {
     onSave: (invoice: Invoice) => void;
@@ -10,82 +11,19 @@ interface ManualInvoiceModalProps {
 }
 
 const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose, existingInvoices, invoiceToEdit }) => {
-    const [formData, setFormData] = useState({
-        invoiceDate: new Date().toISOString().split('T')[0],
-        supplierName: '',
-        rif: '',
-        invoiceNumber: '',
-        itemsDescription: '',
-        totalAmount: '',
+    const {
+        formData,
+        suggestions,
+        handleInputChange,
+        handleSupplierChange,
+        selectSupplier,
+        handleSubmit
+    } = useManualInvoiceForm({
+        existingInvoices,
+        invoiceToEdit,
+        onSave,
+        onClose
     });
-
-    useEffect(() => {
-        if (invoiceToEdit) {
-            setFormData({
-                invoiceDate: invoiceToEdit.invoiceDate,
-                supplierName: invoiceToEdit.supplierName,
-                rif: invoiceToEdit.rif,
-                invoiceNumber: invoiceToEdit.invoiceNumber,
-                itemsDescription: invoiceToEdit.itemsDescription,
-                totalAmount: invoiceToEdit.totalAmount.toString(),
-            });
-        }
-    }, [invoiceToEdit]);
-
-    const [suggestions, setSuggestions] = useState<{ name: string; rif: string }[]>([]);
-
-    // Extraer proveedores únicos para autocompletado
-    const uniqueSuppliers = useMemo(() => {
-        const map = new Map<string, string>();
-        existingInvoices.forEach(inv => {
-            if (inv.supplierName && inv.rif) {
-                map.set(inv.supplierName.toLowerCase(), inv.rif);
-            }
-        });
-        return Array.from(map.entries()).map(([name, rif]) => ({
-            name: existingInvoices.find(i => i.supplierName.toLowerCase() === name)?.supplierName || name,
-            rif
-        }));
-    }, [existingInvoices]);
-
-    const handleSupplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setFormData(prev => ({ ...prev, supplierName: value }));
-
-        if (value.length > 1) {
-            const filtered = uniqueSuppliers.filter(s =>
-                s.name.toLowerCase().includes(value.toLowerCase())
-            );
-            setSuggestions(filtered);
-        } else {
-            setSuggestions([]);
-        }
-    };
-
-    const selectSupplier = (supplier: { name: string; rif: string }) => {
-        setFormData(prev => ({ ...prev, supplierName: supplier.name, rif: supplier.rif }));
-        setSuggestions([]);
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const newInvoice: Invoice = {
-            id: invoiceToEdit ? invoiceToEdit.id : new Date().toISOString() + Math.random(),
-            invoiceDate: formData.invoiceDate,
-            supplierName: formData.supplierName,
-            rif: formData.rif,
-            invoiceNumber: formData.invoiceNumber,
-            itemsDescription: formData.itemsDescription,
-            totalAmount: parseFloat(formData.totalAmount),
-            fileDataUrl: invoiceToEdit ? invoiceToEdit.fileDataUrl : '', // Mantener archivo si existe
-            fileType: invoiceToEdit ? invoiceToEdit.fileType : 'manual',
-            fileName: invoiceToEdit ? invoiceToEdit.fileName : 'Registro Manual',
-        };
-
-        onSave(newInvoice);
-        onClose();
-    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -103,9 +41,10 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha</label>
                             <input
                                 type="date"
+                                name="invoiceDate"
                                 required
                                 value={formData.invoiceDate}
-                                onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                         </div>
@@ -113,10 +52,11 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto Total</label>
                             <input
                                 type="number"
+                                name="totalAmount"
                                 step="0.01"
                                 required
                                 value={formData.totalAmount}
-                                onChange={e => setFormData({ ...formData, totalAmount: e.target.value })}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 placeholder="0.00"
                             />
@@ -127,6 +67,7 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proveedor</label>
                         <input
                             type="text"
+                            name="supplierName"
                             required
                             value={formData.supplierName}
                             onChange={handleSupplierChange}
@@ -154,9 +95,10 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RIF</label>
                             <input
                                 type="text"
+                                name="rif"
                                 required
                                 value={formData.rif}
-                                onChange={e => setFormData({ ...formData, rif: e.target.value.toUpperCase() })}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 placeholder="J-12345678-9"
                             />
@@ -165,9 +107,10 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nro. Factura / Recibo</label>
                             <input
                                 type="text"
+                                name="invoiceNumber"
                                 required
                                 value={formData.invoiceNumber}
-                                onChange={e => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 placeholder="000123"
                             />
@@ -177,9 +120,10 @@ const ManualInvoiceModal: React.FC<ManualInvoiceModalProps> = ({ onSave, onClose
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                         <textarea
+                            name="itemsDescription"
                             required
                             value={formData.itemsDescription}
-                            onChange={e => setFormData({ ...formData, itemsDescription: e.target.value })}
+                            onChange={handleInputChange}
                             className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             rows={3}
                             placeholder="Detalle de la compra..."

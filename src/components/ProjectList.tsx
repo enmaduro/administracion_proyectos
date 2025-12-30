@@ -1,6 +1,6 @@
 // src/components/ProjectList.tsx
 import React, { useState } from 'react';
-import { ProjectMetadata } from '../types';
+import { ProjectMetadata } from '@/types';
 
 interface ProjectListProps {
     projects: ProjectMetadata[];

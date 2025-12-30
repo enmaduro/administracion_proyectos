@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HistoryEntry } from '../types.ts';
+import { HistoryEntry } from '@/types';
 
 interface HistoryLogModalProps {
   history: HistoryEntry[];
@@ -68,7 +68,7 @@ const HistoryLogModal: React.FC<HistoryLogModalProps> = ({ history, onClose }) =
             ))
           ) : (
             <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 dark:text-gray-400">Aún no hay actividad registrada.</p>
+              <p className="text-gray-500 dark:text-gray-400">Aún no hay actividad registrada.</p>
             </div>
           )}
         </div>

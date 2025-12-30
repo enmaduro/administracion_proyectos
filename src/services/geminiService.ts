@@ -1,4 +1,4 @@
-import { Invoice } from '../types';
+import { Invoice } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const extractInvoiceData = async (file: File, apiKey?: string): Promise<Omit<Invoice, 'id' | 'fileDataUrl' | 'fileType' | 'fileName'>> => {
@@ -102,9 +102,20 @@ export const extractInvoiceData = async (file: File, apiKey?: string): Promise<O
       }
     }
 
-    let parsed: any;
+    // Type definition for the expected structure from Gemini
+    interface GeminiInvoiceResponse {
+      invoiceDate?: string;
+      supplierName?: string;
+      rif?: string;
+      invoiceNumber?: string;
+      itemsDescription?: string;
+      totalAmount?: number;
+      [key: string]: unknown; // Allow other fields but keep them unknown
+    }
+
+    let parsed: GeminiInvoiceResponse;
     try {
-      parsed = JSON.parse(jsonString);
+      parsed = JSON.parse(jsonString) as GeminiInvoiceResponse;
     } catch (e) {
       console.error("Error parseando JSON de Gemini:", e);
       throw new Error("La IA respondió pero no se pudo leer el formato JSON. Intenta de nuevo.");

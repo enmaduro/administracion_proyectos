@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ProjectInfo } from '../types';
+import { ProjectInfo } from '@/types';
+import { registerCommunity } from '@services/registrationService';
 
 interface ProjectSetupProps {
   onProjectSubmit: (info: ProjectInfo) => void;
@@ -10,7 +11,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
   const [consultationNumber, setConsultationNumber] = useState('');
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [budget, setBudget] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [shouldRegister, setShouldRegister] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,20 +21,32 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
         consultationNumber,
         year,
         budget: budget ? parseFloat(budget) : undefined,
-        geminiApiKey: apiKey.trim() || undefined
       });
+
+      // If registration is checked, we can trigger a side effect here or in the parent
+      if (shouldRegister) {
+        registerCommunity({
+          communityName,
+          consultationNumber,
+          year,
+          budget: budget ? parseFloat(budget) : undefined,
+        });
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-2">
-          Configuración del Proyecto
-        </h2>
-        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
-          Ingrese los detalles para comenzar a gestionar los gastos.
-        </p>
+        <div className="flex flex-col items-center mb-6">
+          <img src="/logo-comuna.png" alt="Logo Comuna" className="h-20 w-20 object-contain mb-4" />
+          <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white">
+            Configuración del Proyecto
+          </h2>
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
+            Ingrese los detalles de su Comuna o Consejo Comunal.
+          </p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="communityName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -98,25 +111,20 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
               />
             </div>
           </div>
-          <div>
-            <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Tu Clave de API de Gemini (Opcional)
-            </label>
-            <p className="text-xs text-gray-500 mb-2">
-              Si la dejas en blanco, se usará la clave compartida de la aplicación.
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                Obtener mi clave gratis aquí
-              </a>.
-            </p>
+
+          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
             <input
-              type="password"
-              id="apiKey"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              placeholder="Pegue su clave aquí (comienza con AIza...)"
+              type="checkbox"
+              id="shouldRegister"
+              checked={shouldRegister}
+              onChange={(e) => setShouldRegister(e.target.checked)}
+              className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
             />
+            <label htmlFor="shouldRegister" className="text-xs text-blue-800 dark:text-blue-200 cursor-pointer select-none">
+              <strong>Registrar mi comunidad</strong> para recibir soporte y mejoras personalizadas (Opcional).
+            </label>
           </div>
+
           <button
             type="submit"
             className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-transform transform hover:scale-105"

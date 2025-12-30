@@ -3,7 +3,6 @@ export interface ProjectInfo {
     consultationNumber: string;
     year: string;
     budget?: number;
-    geminiApiKey?: string;
 }
 
 export interface Phase {

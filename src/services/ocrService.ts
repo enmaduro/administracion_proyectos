@@ -1,6 +1,6 @@
 import Tesseract from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
-import { Invoice } from '../types';
+import { Invoice } from '@/types';
 
 // IMPORTANT: Set worker source for PDF.js - Using local import with Vite
 // This ensures the worker is bundled and compatible with the installed version
@@ -24,10 +24,25 @@ export const extractInvoiceDataLocal = async (file: File): Promise<Omit<Invoice,
         console.log("Extracted Text:\n", text);
         return parseInvoiceText(text);
 
-    } catch (error) {
-        console.error("OCR Error:", error);
-        // Expose the real error
-        const msg = error instanceof Error ? error.message : String(error);
+    } catch (error: any) {
+        console.error("DEBUG - OCR Error Detail:", error);
+
+        let msg = "Error desconocido";
+        if (error instanceof Error) {
+            msg = error.message;
+        } else if (typeof error === 'string') {
+            msg = error;
+        } else if (error && typeof error === 'object') {
+            msg = error.message || JSON.stringify(error);
+        } else if (error !== undefined && error !== null) {
+            msg = String(error);
+        }
+
+        // Specific hint for PDF.js common worker failures
+        if (msg.includes("worker") || msg === "undefined") {
+            msg = "Error de inicialización del motor de lectura (Worker). Por favor, intente recargar la aplicación.";
+        }
+
         throw new Error(`Error técnico procesando el documento: ${msg}`);
     }
 };
@@ -69,121 +84,142 @@ const extractTextFromImage = async (file: File): Promise<string> => {
 
 
 const parseInvoiceText = (text: string): Omit<Invoice, 'id' | 'fileDataUrl' | 'fileType' | 'fileName'> => {
-    const lines = text.split('\n');
-
-    // Normalization
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const cleanText = text.replace(/\s+/g, ' ').toUpperCase();
 
     // 1. RIF Extraction
-    // Robust Regex: Handles J, V, E, G, P. Allows spaces, dashes, dots.
-    // Examples: J-12345678-9, J123456789, J 12345678 9, V.12345678.9
-    const rifMatch = cleanText.match(/\b([VJEPGvjepg])[-\.\s]?(\d{5,9})[-\.\s]?(\d{1})\b/);
+    const rifMatch = cleanText.match(/\b([VJEPG])[-.\s]?(\d{5,9})[-.\s]?(\d{1})\b/i);
     let rif = "";
     if (rifMatch) {
-        // Normalize to J-12345678-9 format
         rif = `${rifMatch[1]}-${rifMatch[2]}-${rifMatch[3]}`.toUpperCase();
     }
 
     // 2. Date Extraction
-    // Enhanced: allows 12-12-2023, 12/12/2023, 12.12.2023, 12 12 2023
-    // Also captures 2024 (2-digit or 4-digit year)
-    const dateMatch = cleanText.match(/\b(\d{2})[-\/\.\s](\d{2})[-\/\.\s](\d{2,4})\b/);
+    const dateMatch = cleanText.match(/\b(\d{2})[-/.\s](\d{2})[-/.\s](\d{2,4})\b/);
     let invoiceDate = "";
     if (dateMatch) {
         let year = dateMatch[3];
-        // Fix 2-digit year
         if (year.length === 2) year = `20${year}`;
-
-        // Basic validation (reasonable year)
         const yearNum = parseInt(year);
         if (yearNum > 2000 && yearNum < 2030) {
+            // Normalize to YYYY-MM-DD for <input type="date">
             invoiceDate = `${year}-${dateMatch[2]}-${dateMatch[1]}`;
         }
     }
 
     // 3. Invoice Number
-    // Enhanced: Look for N°, No., Ctrl, Factura, etc.
-    // MUST contain at least one digit to avoid capturing just "FACTURA"
-    let invoiceNoMatch = cleanText.match(/(?:FACTURA|CONTROL|NOTA|FISCAL|NRO|NUMERO|NO\.)[\s\.:°]*([A-Z0-9\-\/]*\d+[A-Z0-9\-\/]*)/i);
+    // Heuristic: Prefer numbers that are at least 3 digits long or have specific prefixes.
+    let invoiceNoMatch = cleanText.match(/(?:FACTURA|CONTROL|NOTA|FISCAL|NRO|NUMERO|NO\.)[\s.:°]*([A-Z0-9\-/]*\d{2,}[A-Z0-9\-/]*)/i);
 
-    // If not found, look for just the label "N° 12345"
     if (!invoiceNoMatch) {
-        invoiceNoMatch = cleanText.match(/(?:N[°º\.]?)\s*([\d\-\/]{4,})/i);
+        // Fallback to searching for a sequence of 4+ digits
+        invoiceNoMatch = cleanText.match(/(?:N[°º.]?)\s*([\d\-/]{4,})/i);
     }
 
-    const invoiceNumber = invoiceNoMatch ? invoiceNoMatch[1].replace(/[^a-zA-Z0-9\-]/g, '') : `OCR-${Date.now().toString().slice(-6)}`;
+    let invoiceNumber = invoiceNoMatch ? invoiceNoMatch[1] : "";
+
+    // Clean up: remove leading/trailing noise and ensure it's not just a year if possible
+    if (invoiceNumber) {
+        invoiceNumber = invoiceNumber.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, ''); // Trim non-alphanumeric noise
+
+        // If it's only 4 digits and matches the current or previous year, it might be a false positive
+        const currentYear = new Date().getFullYear().toString();
+        if (invoiceNumber.length === 4 && (invoiceNumber === currentYear || invoiceNumber === (parseInt(currentYear) - 1).toString())) {
+            const otherNumbers = cleanText.match(/\b\d{5,}\b/g);
+            if (otherNumbers && otherNumbers.length > 0) {
+                invoiceNumber = otherNumbers[0];
+            }
+        }
+    }
+
+    if (!invoiceNumber || invoiceNumber.length < 2) {
+        invoiceNumber = `OCR-${Date.now().toString().slice(-6)}`;
+    }
 
     // 4. Total Amount
-    // This is tricky. We'll look for keywords like "TOTAL" or "MONTO" and find the largest number nearby.
-    // Or simply find the largest number in the text that looks like a currency.
-
-    // Regex for currency: 1.234,56 or 1234.56
-    // Venezuelan specific: usually dots for thousands, whitespace, or nothing. Comma for decimals.
-
-    // Strategy: Find all numbers that look like money.
     const moneyRegex = /\b\d{1,3}(?:[.,]\d{3})*[.,]\d{2}\b/g;
     const moneyMatches = cleanText.match(moneyRegex);
-
     let totalAmount = 0;
     if (moneyMatches) {
-        // Parse candidates
         const candidates = moneyMatches.map(m => {
-            // Remove thousands separators (dots) and replace decimal comma with dot
-            // CASE 1: 1.250,00 -> 1250.00 (Standard VE)
-            // CASE 2: 1,250.00 -> 1250.00 (Standard US)
-
             let valStr = m;
             if (valStr.includes(',') && valStr.includes('.')) {
                 if (valStr.indexOf(',') < valStr.indexOf('.')) {
-                    // 1,234.56 -> Remove ,
                     valStr = valStr.replace(/,/g, '');
                 } else {
-                    // 1.234,56 -> Remove . and swap , to .
                     valStr = valStr.replace(/\./g, '').replace(',', '.');
                 }
             } else if (valStr.includes(',')) {
-                // 1234,56 -> 1234.56
                 valStr = valStr.replace(',', '.');
             }
-            // else 1234.56 (already good)
-
             return parseFloat(valStr);
         });
-
-        // Heuristic: The total is usually the LARGEST number found on the page.
-        // Or strictly look for numbers after "TOTAL"
         totalAmount = Math.max(...candidates);
     }
 
-    // 5. Supplier Name
-    // Very hard with Regex. Logic:
-    // - Not SENIAT
-    // - Usually the first few lines of the receipt.
-    // - Often contains "C.A.", "S.A."
-
+    // 5. Supplier Name Heuristic
     let supplierName = "Proveedor Desconocido";
 
-    // Simple Heuristic: First line that isn't SENIAT and has > 4 chars
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-        const line = lines[i].trim().toUpperCase();
-        if (line.length > 3 && !line.includes("SENIAT") && !line.includes("FACTURA") && !line.includes("RIF")) {
-            // Check for specific company suffixes
-            if (line.includes("C.A.") || line.includes("S.A.") || line.includes("S.R.L") || line.includes("FIRMA PERSONAL")) {
-                supplierName = lines[i].trim();
+    // Strategy: Search for SENIAT and take the line below it if it looks like a supplier
+    const seniatIndex = lines.findIndex(l => l.toUpperCase().includes("SENIAT"));
+    if (seniatIndex !== -1 && lines[seniatIndex + 1]) {
+        const nextLine = lines[seniatIndex + 1];
+        if (nextLine.length > 5 && !nextLine.toUpperCase().includes("RIF") && !nextLine.toUpperCase().includes("FACTURA")) {
+            supplierName = nextLine;
+        }
+    }
+
+    // Fallback: search for company suffixes
+    if (supplierName === "Proveedor Desconocido") {
+        for (let i = 0; i < Math.min(lines.length, 15); i++) {
+            const line = lines[i].toUpperCase();
+            // Skip generic category-like lines if they don't have a legal suffix
+            const isGeneric = /MATERIALES|CONSTRUCCION|REPUESTOS|SERVICIOS/i.test(line) &&
+                !/(C\.?A\.?|S\.?A\.?|S\.?R\.?L\.?|F\.?P\.?)$/i.test(line);
+
+            if (line.length > 3 && !line.includes("SENIAT") && !line.includes("RIF") && !isGeneric) {
+                if (line.includes("C.A.") || line.includes("S.A.") || line.includes("S.R.L") || line.includes("FIRMA PERSONAL")) {
+                    supplierName = lines[i];
+                    break;
+                }
+            }
+        }
+    }
+
+    // Last fallback: first non-empty line that isn't technical noise or generic
+    if (supplierName === "Proveedor Desconocido" && lines.length > 0) {
+        for (const line of lines.slice(0, 5)) {
+            const up = line.toUpperCase();
+            const isGeneric = /MATERIALES|CONSTRUCCION|REPUESTOS|SERVICIOS/i.test(up);
+            if (up.length > 5 && !up.includes("SENIAT") && !up.includes("REPÚBLICA") && !up.includes("FACTURA") && !isGeneric) {
+                supplierName = line;
                 break;
             }
         }
     }
 
-    // Fallback: If no company suffix found, take the first clean line matching rules
-    if (supplierName === "Proveedor Desconocido") {
-        for (let i = 0; i < Math.min(lines.length, 5); i++) {
-            const line = lines[i].trim().toUpperCase();
-            if (line.length > 5 && !line.includes("SENIAT") && !line.includes("REPÚBLICA")) {
-                supplierName = lines[i].trim();
-                break;
-            }
-        }
+    // 6. Items Description Heuristic
+    let itemsDescription = "";
+    // Avoid short lines and noise
+    const descCandidates = lines.filter(l =>
+        l.length > 10 &&
+        !l.includes("SENIAT") &&
+        !l.includes("RIF") &&
+        !l.includes("FACTURA") &&
+        !l.includes("CONTROL") &&
+        !l.match(/\d{2}[-/.]\d{2}/) // Avoid date-like lines
+    );
+
+    if (descCandidates.length > 0) {
+        // Often the first few lines contain the main descriptive summary or company name
+        // We take the first one that isn't the supplier name if possible
+        const filtered = descCandidates.filter(l =>
+            l.toLowerCase() !== supplierName.toLowerCase() &&
+            !l.toUpperCase().includes(supplierName.toUpperCase())
+        );
+        itemsDescription = filtered[0] || descCandidates[0] || "Gasto de proyecto";
+    } else {
+        itemsDescription = "Gasto de proyecto";
     }
 
     return {
@@ -191,7 +227,7 @@ const parseInvoiceText = (text: string): Omit<Invoice, 'id' | 'fileDataUrl' | 'f
         supplierName,
         rif,
         invoiceNumber,
-        itemsDescription: "Gasto procesado automáticamente (OCR)",
+        itemsDescription,
         totalAmount
     };
 

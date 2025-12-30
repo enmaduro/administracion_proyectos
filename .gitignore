@@ -114,3 +114,17 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Electron-builder output
+dist-electron/
+build/
+
+# Temporary files
+src/components/Nuevo Documento de texto*.txt
+*.pdf
+Applicacion.txt
+estructura.txt
+list_output.txt
+deployment_output.txt
+startup_debug.log
+build_error.log

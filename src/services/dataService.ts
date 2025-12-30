@@ -1,4 +1,4 @@
-import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry, BudgetItem } from '../types';
+import { ProjectInfo, Invoice, Phase, HistoryEntry, ChatEntry, BudgetItem } from '@/types';
 import { saveAs } from 'file-saver';
 
 export interface ProjectDataBackup {

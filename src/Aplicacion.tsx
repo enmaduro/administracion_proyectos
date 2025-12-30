@@ -1,142 +1,125 @@
-// Aplicacion.tsx
+// src/Aplicacion.tsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { ProjectMetadata } from './types';
+// Si NO creaste la carpeta hooks, usa: import { usePersistentState } from './hooks/usePersistentState';
+import { usePersistentState } from './hooks/usePersistentState'; 
 import ProjectList from './components/ProjectList';
 import ProjectDashboard from './components/ProjectDashboard';
-
-// Hook personalizado para manejar el estado que persiste en localStorage.
-function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
-      return initialValue;
-    }
-  });
-
-  const setValue: React.Dispatch<React.SetStateAction<T>> = useCallback((value) => {
-    try {
-      setStoredValue((prevValue) => {
-        const valueToStore = value instanceof Function ? value(prevValue) : value;
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        return valueToStore;
-      });
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key]);
-
-  return [storedValue, setValue];
-}
+import RegistrationModal from './components/RegistrationModal';
 
 const App: React.FC = () => {
-  const [projects, setProjects] = usePersistentState<ProjectMetadata[]>('projects-list', []);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+    // Enlace de Google Forms
+    const REGISTRATION_LINK = "https://forms.gle/QhctRTkCTTaQqH6p7";
 
-  // Migración de datos antiguos (Single Project -> Multi Project)
-  useEffect(() => {
-    const migrateData = () => {
-      const oldProjectInfo = window.localStorage.getItem('project-info');
-      if (oldProjectInfo && projects.length === 0) {
-        console.log("Detectados datos antiguos. Iniciando migración...");
-        const defaultId = 'default-project';
-        const now = new Date().toISOString();
+    // Lista de Proyectos
+    const [projects, setProjects] = usePersistentState<ProjectMetadata[]>('projects-list', []);
+    const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
-        // Crear metadatos del proyecto
-        const newProject: ProjectMetadata = {
-          id: defaultId,
-          name: 'Proyecto Principal (Migrado)',
-          createdAt: now,
-          lastAccessed: now,
+    // Control de Registro (Portero)
+    const [hasRegistered, setHasRegistered] = usePersistentState('gastos_app_registered', false);
+
+    // Migración de datos antiguos (Lógica existente, se mantiene igual)
+    useEffect(() => {
+        const migrateData = () => {
+            const oldProjectInfo = window.localStorage.getItem('project-info');
+            if (oldProjectInfo && projects.length === 0) {
+                console.log("Detectados datos antiguos. Iniciando migración...");
+                const defaultId = 'default-project';
+                const now = new Date().toISOString();
+
+                const newProject: ProjectMetadata = {
+                    id: defaultId,
+                    name: 'Proyecto Principal (Migrado)',
+                    createdAt: now,
+                    lastAccessed: now,
+                };
+
+                const keysToMigrate = [
+                    { old: 'project-info', new: `project-${defaultId}-info` },
+                    { old: 'project-invoices', new: `project-${defaultId}-invoices` },
+                    { old: 'project-phases', new: `project-${defaultId}-phases` },
+                    { old: 'project-history', new: `project-${defaultId}-history` },
+                ];
+
+                keysToMigrate.forEach(({ old, new: newKey }) => {
+                    const data = window.localStorage.getItem(old);
+                    if (data) {
+                        window.localStorage.setItem(newKey, data);
+                        window.localStorage.removeItem(old);
+                    }
+                });
+
+                setProjects([newProject]);
+                setActiveProjectId(defaultId);
+                console.log("Migración completada.");
+            }
         };
 
-        // Migrar datos a las nuevas claves
-        const keysToMigrate = [
-          { old: 'project-info', new: `project-${defaultId}-info` },
-          { old: 'project-invoices', new: `project-${defaultId}-invoices` },
-          { old: 'project-phases', new: `project-${defaultId}-phases` },
-          { old: 'project-history', new: `project-${defaultId}-history` },
+        migrateData();
+    }, [projects, setProjects]);
+
+    const handleCreateProject = (name: string) => {
+        const newProject: ProjectMetadata = {
+            id: Date.now().toString(),
+            name,
+            createdAt: new Date().toISOString(),
+            lastAccessed: new Date().toISOString(),
+        };
+        setProjects(prev => [...prev, newProject]);
+        setActiveProjectId(newProject.id);
+    };
+
+    const handleSelectProject = (projectId: string) => {
+        setActiveProjectId(projectId);
+        setProjects(prev => prev.map(p =>
+            p.id === projectId ? { ...p, lastAccessed: new Date().toISOString() } : p
+        ));
+    };
+
+    const handleDeleteProject = (projectId: string) => {
+        const keysToDelete = [
+            `project-${projectId}-info`,
+            `project-${projectId}-invoices`,
+            `project-${projectId}-phases`,
+            `project-${projectId}-history`,
         ];
+        keysToDelete.forEach(key => window.localStorage.removeItem(key));
 
-        keysToMigrate.forEach(({ old, new: newKey }) => {
-          const data = window.localStorage.getItem(old);
-          if (data) {
-            window.localStorage.setItem(newKey, data);
-            window.localStorage.removeItem(old); // Limpiar datos antiguos
-          }
-        });
-
-        // Actualizar estado
-        setProjects([newProject]);
-        // Opcional: Auto-seleccionar el proyecto migrado
-        setActiveProjectId(defaultId);
-        console.log("Migración completada.");
-      }
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        if (activeProjectId === projectId) {
+            setActiveProjectId(null);
+        }
     };
 
-    migrateData();
-  }, [projects, setProjects]);
-
-  const handleCreateProject = (name: string) => {
-    const newProject: ProjectMetadata = {
-      id: Date.now().toString(),
-      name,
-      createdAt: new Date().toISOString(),
-      lastAccessed: new Date().toISOString(),
+    const handleBackToProjects = () => {
+        setActiveProjectId(null);
     };
-    setProjects(prev => [...prev, newProject]);
-    setActiveProjectId(newProject.id);
-  };
 
-  const handleSelectProject = (projectId: string) => {
-    setActiveProjectId(projectId);
-    // Actualizar lastAccessed
-    setProjects(prev => prev.map(p =>
-      p.id === projectId ? { ...p, lastAccessed: new Date().toISOString() } : p
-    ));
-  };
-
-  const handleDeleteProject = (projectId: string) => {
-    // Eliminar datos del localStorage
-    const keysToDelete = [
-      `project-${projectId}-info`,
-      `project-${projectId}-invoices`,
-      `project-${projectId}-phases`,
-      `project-${projectId}-history`,
-    ];
-    keysToDelete.forEach(key => window.localStorage.removeItem(key));
-
-    // Eliminar de la lista
-    setProjects(prev => prev.filter(p => p.id !== projectId));
-    if (activeProjectId === projectId) {
-      setActiveProjectId(null);
+    // --- EL PORTERO ---
+    // Si no se ha registrado, mostramos el modal y bloqueamos el resto
+    if (!hasRegistered) {
+        return <RegistrationModal registrationLink={REGISTRATION_LINK} onComplete={() => setHasRegistered(true)} />;
     }
-  };
 
-  const handleBackToProjects = () => {
-    setActiveProjectId(null);
-  };
-
-  if (activeProjectId) {
+    // --- APLICACIÓN NORMAL ---
     return (
-      <ProjectDashboard
-        key={activeProjectId}
-        activeProjectId={activeProjectId}
-        onBack={handleBackToProjects}
-      />
+        <div className="min-h-screen bg-background">
+            {activeProjectId ? (
+                <ProjectDashboard
+                    key={activeProjectId}
+                    activeProjectId={activeProjectId}
+                    onBack={handleBackToProjects}
+                />
+            ) : (
+                <ProjectList
+                    projects={projects}
+                    onSelectProject={handleSelectProject}
+                    onCreateProject={handleCreateProject}
+                    onDeleteProject={handleDeleteProject}
+                />
+            )}
+        </div>
     );
-  }
-
-  return (
-    <ProjectList
-      projects={projects}
-      onSelectProject={handleSelectProject}
-      onCreateProject={handleCreateProject}
-      onDeleteProject={handleDeleteProject}
-    />
-  );
 };
 
 export default App;

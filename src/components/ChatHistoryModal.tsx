@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CopyIcon, CheckIcon } from './icons';
-import { ChatEntry } from '../types';
+import { ChatEntry } from '@/types';
 
 interface ChatHistoryModalProps {
   history: ChatEntry[];
@@ -81,8 +81,8 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({ history, onClose, o
                 )}
                 <div className="relative group max-w-[80%]">
                   <div className={`p-3 rounded-2xl px-4 shadow-sm ${entry.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-none'
+                    ? 'bg-blue-600 text-white rounded-br-none'
+                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-none'
                     }`}>
                     <p className="text-sm dark:text-gray-300 font-semibold mb-1 opacity-80 text-xs">
                       {entry.sender === 'user' ? 'Tú' : 'Asistente AI'} • {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
