@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "homepage": "https://enmaduro.github.io/administracion_proyectos",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "npm run electron:dev",
     "vite:dev": "vite",
@@ -15,16 +16,22 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run vite:dev\" \"npm run electron\"",
     "electron:build": "npm run build && electron-builder"
   },
-  "main": "electron/main.js",
   "build": {
     "appId": "com.enrique.gastoscomunitarios",
     "productName": "Gestor de Gastos Comunitarios",
     "directories": {
       "output": "dist-electron"
     },
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "build/icon.ico"
+      }
+    ],
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "build/icon.ico"
     ],
     "win": {
       "target": "nsis",
@@ -35,7 +42,10 @@
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Gestor de Gastos Comunitarios"
     }
   },
   "dependencies": {
@@ -63,13 +73,12 @@
     "electron-builder": "^26.0.12",
     "gh-pages": "^5.0.0",
     "postcss": "^8.4.32",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "3.4.17",
     "typescript": "^4.9.3",
     "vite": "^7.2.2",
     "wait-on": "^9.0.3"
   },
-  "description": "Una aplicación web progresiva (PWA) moderna, intuitiva y potente, diseñada para simplificar la gestión financiera de proyectos comunitarios. Digitaliza facturas y recibos en segundos usando inteligencia artificial, permitiendo un seguimiento, control y reporte de gastos eficiente y transparente.",
-  "keywords": [],
+  "description": "Una aplicación web progresiva (PWA) moderna, intuitiva y potente, diseñada para simplificar la gestión financiera de proyectos comunitarios.",
   "author": "Enrique Maduro",
   "license": "ISC"
 }
