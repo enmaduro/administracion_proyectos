@@ -12,6 +12,7 @@ interface HeaderProps {
   onImport: () => void;
   onShowBudget: () => void;
   onShowInvoices: () => void;
+  onEdit: () => void;
   activeView: 'invoices' | 'budget';
 }
 
@@ -25,21 +26,31 @@ const Header: React.FC<HeaderProps> = ({
   onImport,
   onShowBudget,
   onShowInvoices,
+  onEdit,
   activeView
 }) => {
   return (
     <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-slate-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
       <div className="container mx-auto px-4 md:px-8 py-4">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          
+
           {/* Izquierda: Título y Badge */}
           <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 Gestor de Gastos
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex items-center gap-2">
                 {projectInfo.communityName}
+                <button
+                  onClick={onEdit}
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                  title="Editar Información"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
               </p>
             </div>
             {/* Badge del Proyecto */}
@@ -53,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Derecha: Controles */}
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
-            
+
             {/* Botón Volver */}
             <button
               onClick={onBack}
@@ -68,20 +79,18 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex bg-slate-100 dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-600">
               <button
                 onClick={onShowInvoices}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
-                  activeView === 'invoices'
-                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm font-semibold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-2 ${activeView === 'invoices'
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
               >
                 Facturas
               </button>
               <button
                 onClick={onShowBudget}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
-                  activeView === 'budget'
-                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm font-semibold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-2 ${activeView === 'budget'
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
               >
                 Presupuesto

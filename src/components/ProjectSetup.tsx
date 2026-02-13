@@ -4,14 +4,16 @@ import { registerCommunity } from '@services/registrationService';
 
 interface ProjectSetupProps {
   onProjectSubmit: (info: ProjectInfo) => void;
+  initialData?: ProjectInfo;
+  onCancel?: () => void;
 }
 
-const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
-  const [communityName, setCommunityName] = useState('');
-  const [consultationNumber, setConsultationNumber] = useState('');
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [budget, setBudget] = useState('');
-  const [shouldRegister, setShouldRegister] = useState(true);
+const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit, initialData, onCancel }) => {
+  const [communityName, setCommunityName] = useState(initialData?.communityName || '');
+  const [consultationNumber, setConsultationNumber] = useState(initialData?.consultationNumber || '');
+  const [year, setYear] = useState(initialData?.year || new Date().getFullYear().toString());
+  const [budget, setBudget] = useState(initialData?.budget?.toString() || '');
+  const [shouldRegister, setShouldRegister] = useState(!initialData);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +43,10 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
         <div className="flex flex-col items-center mb-6">
           <img src="/logo-comuna.png" alt="Logo Comuna" className="h-20 w-20 object-contain mb-4" />
           <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white">
-            Configuración del Proyecto
+            {initialData ? 'Editar Proyecto' : 'Configuración del Proyecto'}
           </h2>
           <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
-            Ingrese los detalles de su Comuna o Consejo Comunal.
+            {initialData ? 'Actualice los detalles de su Comuna o Consejo Comunal.' : 'Ingrese los detalles de su Comuna o Consejo Comunal.'}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -125,12 +127,23 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ onProjectSubmit }) => {
             </label>
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-transform transform hover:scale-105"
-          >
-            Iniciar Proyecto
-          </button>
+          <div className="flex gap-4">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-transform transform hover:scale-105"
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              type="submit"
+              className="flex-3 bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-transform transform hover:scale-105 w-full"
+            >
+              {initialData ? 'Guardar Cambios' : 'Iniciar Proyecto'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -36,6 +36,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
         setError,
         setDebugLog,
         handleProjectSetup,
+        handleUpdateProjectInfo,
         handleFileUpload,
         handleSaveInvoice,
         handleDeleteInvoice,
@@ -65,6 +66,13 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
     const [isManualInvoiceVisible, setIsManualInvoiceVisible] = useState(false);
     const [manualInvoiceToEdit, setManualInvoiceToEdit] = useState<Invoice | undefined>(undefined);
 
+    // Estado de Edición de Presupuesto
+    const [isEditingBudget, setIsEditingBudget] = useState(false);
+    const [editBudgetValue, setEditBudgetValue] = useState('');
+
+    // Estado de Edición de Datos del Proyecto (Modal)
+    const [isEditingProjectSetup, setIsEditingProjectSetup] = useState(false);
+
     // 3. Filtrado de datos (Lógica de vista)
     const filteredInvoices = useMemo(() => {
         let res = invoices;
@@ -90,6 +98,17 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
         input.click();
     };
 
+    const handleBudgetUpdate = () => {
+        const val = parseFloat(editBudgetValue.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(val) && projectInfo) {
+            handleUpdateProjectInfo({
+                ...projectInfo,
+                budget: val
+            });
+            setIsEditingBudget(false);
+        }
+    };
+
     if (!projectInfo) return <ProjectSetup onProjectSubmit={handleProjectSetup} />;
 
     return (
@@ -104,6 +123,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                 onImport={triggerImport}
                 onShowBudget={() => setActiveView('budget')}
                 onShowInvoices={() => setActiveView('invoices')}
+                onEdit={() => setIsEditingProjectSetup(true)}
                 activeView={activeView}
             />
 
@@ -128,16 +148,48 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                         {projectInfo.budget !== undefined && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                 {/* Presupuesto (Gradiente Primario) */}
-                                <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-6 text-white shadow-lg shadow-primary-500/20 flex flex-col justify-between h-40">
+                                <div
+                                    className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-6 text-white shadow-lg shadow-primary-500/20 flex flex-col justify-between h-40 cursor-pointer group"
+                                    onClick={() => {
+                                        if (!isEditingBudget && projectInfo?.budget !== undefined) {
+                                            setEditBudgetValue(projectInfo.budget.toString());
+                                            setIsEditingBudget(true);
+                                        }
+                                    }}
+                                >
                                     <div className="flex justify-between items-start">
                                         <h3 className="text-primary-100 text-sm font-medium uppercase tracking-wider">Presupuesto Total</h3>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
+                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                                            {isEditingBudget ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            )}
                                         </div>
                                     </div>
-                                    <p className="text-3xl font-bold mt-2">Bs. {projectInfo.budget.toLocaleString('es-VE')}</p>
+                                    {isEditingBudget ? (
+                                        <div className="flex items-center gap-2 mt-2" onClick={e => e.stopPropagation()}>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={editBudgetValue}
+                                                onChange={(e) => setEditBudgetValue(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleBudgetUpdate()}
+                                                className="bg-white/10 border-b-2 border-white/50 text-2xl font-bold w-full focus:outline-none focus:border-white py-1"
+                                            />
+                                            <button onClick={handleBudgetUpdate} className="p-2 hover:bg-white/20 rounded-full">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-3xl font-bold mt-2">Bs. {projectInfo.budget.toLocaleString('es-VE')}</p>
+                                    )}
                                 </div>
 
                                 {/* Gastado (Tarjeta Blanca con Acento Naranja) */}
@@ -154,30 +206,46 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                                 </div>
 
                                 {/* Restante (Tarjeta Dinámica) */}
-                                <div className={`rounded-2xl p-6 shadow-sm border flex flex-col justify-between h-40 ${
-                                    remainingBudget && remainingBudget >= 0 
-                                        ? 'bg-surface dark:bg-gray-800 border-slate-200 dark:border-gray-700' 
-                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                                }`}>
+                                <div className={`rounded-2xl p-6 shadow-sm border flex flex-col justify-between h-40 ${remainingBudget && remainingBudget >= 0
+                                    ? 'bg-surface dark:bg-gray-800 border-slate-200 dark:border-gray-700'
+                                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                    }`}>
                                     <div className="flex justify-between items-start">
                                         <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase">Saldo Disponible</h3>
-                                        <div className={`p-2 rounded-lg ${
-                                            remainingBudget && remainingBudget >= 0 
-                                                ? 'bg-green-100 text-green-600' 
-                                                : 'bg-red-100 text-red-600'
-                                        }`}>
+                                        <div className={`p-2 rounded-lg ${remainingBudget && remainingBudget >= 0
+                                            ? 'bg-green-100 text-green-600'
+                                            : 'bg-red-100 text-red-600'
+                                            }`}>
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                             </svg>
                                         </div>
                                     </div>
-                                    <p className={`text-3xl font-bold ${
-                                        remainingBudget && remainingBudget >= 0 
-                                            ? 'text-slate-900 dark:text-white' 
-                                            : 'text-red-600 dark:text-red-400'
-                                    }`}>
+                                    <p className={`text-3xl font-bold ${remainingBudget && remainingBudget >= 0
+                                        ? 'text-slate-900 dark:text-white'
+                                        : 'text-red-600 dark:text-red-400'
+                                        }`}>
                                         Bs. {remainingBudget?.toLocaleString('es-VE')}
                                     </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* BARRA DE PROGRESO */}
+                        {projectInfo.budget && (
+                            <div className="mb-8">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium text-slate-500">Progreso del presupuesto</span>
+                                    <span className="text-sm font-bold text-primary-600">
+                                        {Math.min(100, Math.round((totalAmount / projectInfo.budget) * 100))}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-slate-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
+                                    <div
+                                        className={`h-full transition-all duration-500 ease-out ${(totalAmount / projectInfo.budget) > 1 ? 'bg-red-500' : 'bg-primary-500'
+                                            }`}
+                                        style={{ width: `${Math.min(100, (totalAmount / projectInfo.budget) * 100)}%` }}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -295,6 +363,19 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ activeProjectId, on
                     history={history}
                     onClose={() => setIsHistoryVisible(false)}
                 />
+            )}
+
+            {isEditingProjectSetup && (
+                <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm overflow-y-auto">
+                    <ProjectSetup
+                        initialData={projectInfo}
+                        onProjectSubmit={(info) => {
+                            handleUpdateProjectInfo(info);
+                            setIsEditingProjectSetup(false);
+                        }}
+                        onCancel={() => setIsEditingProjectSetup(false)}
+                    />
+                </div>
             )}
 
             <Footer />

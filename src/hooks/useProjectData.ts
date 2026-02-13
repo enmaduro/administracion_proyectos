@@ -42,6 +42,11 @@ export const useProjectData = (projectId: string) => {
         addHistoryEntry(`Proyecto "${info.communityName}" iniciado.`, 'project');
     };
 
+    const handleUpdateProjectInfo = useCallback((info: ProjectInfo) => {
+        setProjectInfo(info);
+        addHistoryEntry(`Información del proyecto "${info.communityName}" actualizada.`, 'project');
+    }, [setProjectInfo, addHistoryEntry]);
+
     const handleFileUpload = useCallback(async (file: File) => {
         setIsLoading(true);
         setError(null);
@@ -197,6 +202,7 @@ export const useProjectData = (projectId: string) => {
         setError,
         setDebugLog,
         handleProjectSetup,
+        handleUpdateProjectInfo,
         handleFileUpload,
         handleSaveInvoice,
         handleDeleteInvoice,

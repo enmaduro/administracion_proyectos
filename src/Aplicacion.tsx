@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ProjectMetadata } from './types';
 // Si NO creaste la carpeta hooks, usa: import { usePersistentState } from './hooks/usePersistentState';
-import { usePersistentState } from './hooks/usePersistentState'; 
+import { usePersistentState } from './hooks/usePersistentState';
 import ProjectList from './components/ProjectList';
 import ProjectDashboard from './components/ProjectDashboard';
 import RegistrationModal from './components/RegistrationModal';
