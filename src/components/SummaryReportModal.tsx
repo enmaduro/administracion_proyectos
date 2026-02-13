@@ -22,7 +22,7 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
   onClose
 }) => {
   const { summaryData, formatCurrency } = useProjectSummary({ invoices, phases, budgetItems });
-  
+
   const [viewMode, setViewMode] = useState<'invoices' | 'budget'>(mode);
 
   useEffect(() => {
@@ -89,7 +89,7 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
 
         {/* CONTENIDO DEL DOCUMENTO */}
         <div className="flex-grow p-6 md:p-8 flex flex-col">
-          
+
           {/* ENCABEZADO FORMAL */}
           <div className="mb-4 border-b border-slate-400 pb-3">
             <div className="flex justify-between items-start mb-2">
@@ -113,8 +113,8 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
 
           {/* CUADROS DE RESUMEN */}
           {viewMode === 'budget' ? (
-             // PRESUPUESTO
-             <div className="mb-4">
+            // PRESUPUESTO
+            <div className="mb-4">
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="p-2 border border-slate-300 bg-slate-50">
                   <p className="text-[9px] text-gray-500 uppercase font-bold">Total Estimado</p>
@@ -160,10 +160,10 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                   </tfoot>
                 </table>
               </div>
-             </div>
+            </div>
           ) : (
-             // GASTOS
-             <div className="mb-4">
+            // GASTOS
+            <div className="mb-4">
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="p-2 border-l-4 border-orange-600 bg-slate-50 shadow-sm">
                   <p className="text-[9px] text-gray-500 uppercase font-bold">Ejecutado</p>
@@ -177,42 +177,42 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
 
               {/* NUEVA SECCIÓN: RESUMEN POR FASES */}
               {summaryData.phaseGroups.length > 0 && (
-                 <div className="mb-4">
-                    <h3 className="text-sm font-bold text-slate-800 mb-2 uppercase">2a. Resumen de Ejecución por Fase</h3>
-                    <table className="w-full text-[11px] border border-slate-400">
-                      <thead className="bg-slate-100 text-slate-800 font-bold uppercase text-[10px]">
-                        <tr>
-                          <th className="p-1.5 text-left border-b border-slate-300">Nombre de la Fase</th>
-                          <th className="p-1.5 text-right border-b border-slate-300">Monto Subtotal</th>
-                          <th className="p-1.5 text-right border-b border-slate-300">Porcentaje</th>
+                <div className="mb-4">
+                  <h3 className="text-sm font-bold text-slate-800 mb-2 uppercase">2a. Resumen de Ejecución por Fase</h3>
+                  <table className="w-full text-[11px] border border-slate-400">
+                    <thead className="bg-slate-100 text-slate-800 font-bold uppercase text-[10px]">
+                      <tr>
+                        <th className="p-1.5 text-left border-b border-slate-300">Nombre de la Fase</th>
+                        <th className="p-1.5 text-right border-b border-slate-300">Monto Subtotal</th>
+                        <th className="p-1.5 text-right border-b border-slate-300">Porcentaje</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {summaryData.phaseGroups.map(group => (
+                        <tr key={group.details.id}>
+                          <td className="p-1.5 font-medium text-slate-700">{group.details.name}</td>
+                          <td className="p-1.5 text-right font-mono font-bold text-slate-900">{formatCurrency(group.total)}</td>
+                          <td className="p-1.5 text-right font-mono text-slate-600">{group.percentage.toFixed(1)}%</td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {summaryData.phaseGroups.map(group => (
-                          <tr key={group.details.id}>
-                            <td className="p-1.5 font-medium text-slate-700">{group.details.name}</td>
-                            <td className="p-1.5 text-right font-mono font-bold text-slate-900">{formatCurrency(group.total)}</td>
-                            <td className="p-1.5 text-right font-mono text-slate-600">{group.percentage.toFixed(1)}%</td>
-                          </tr>
-                        ))}
-                        {/* Gastos sin Clasificar */}
-                        {summaryData.unassignedGroup.invoices.length > 0 && (
-                           <tr>
-                            <td className="p-1.5 font-medium text-slate-500 italic">Sin Clasificar</td>
-                            <td className="p-1.5 text-right font-mono text-slate-700">{formatCurrency(summaryData.unassignedGroup.total)}</td>
-                            <td className="p-1.5 text-right font-mono text-slate-500">-</td>
-                          </tr>
-                        )}
-                      </tbody>
-                      <tfoot className="bg-slate-50 font-black border-t-2 border-slate-400">
+                      ))}
+                      {/* Gastos sin Clasificar */}
+                      {summaryData.unassignedGroup.invoices.length > 0 && (
                         <tr>
-                          <td className="p-1.5 text-right text-slate-800 text-[10px] uppercase font-bold">Total Ejecutado</td>
-                          <td className="p-1.5 text-right text-slate-900 font-mono text-sm">{formatCurrency(summaryData.grandTotal)}</td>
-                          <td className="p-1.5 text-right text-slate-900 font-mono">100%</td>
+                          <td className="p-1.5 font-medium text-slate-500 italic">Sin Clasificar</td>
+                          <td className="p-1.5 text-right font-mono text-slate-700">{formatCurrency(summaryData.unassignedGroup.total)}</td>
+                          <td className="p-1.5 text-right font-mono text-slate-500">-</td>
                         </tr>
-                      </tfoot>
-                    </table>
-                 </div>
+                      )}
+                    </tbody>
+                    <tfoot className="bg-slate-50 font-black border-t-2 border-slate-400">
+                      <tr>
+                        <td className="p-1.5 text-right text-slate-800 text-[10px] uppercase font-bold">Total Ejecutado</td>
+                        <td className="p-1.5 text-right text-slate-900 font-mono text-sm">{formatCurrency(summaryData.grandTotal)}</td>
+                        <td className="p-1.5 text-right text-slate-900 font-mono">100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               )}
 
               {/* DETALLE DE FACTURAS */}
@@ -230,9 +230,8 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                           <tr>
                             <th className="p-1 text-left">Fecha</th>
                             <th className="p-1 text-left">Proveedor</th>
-                            <th className="p-1 text-left">Nro.</th>
-                            <th className="p-1 text-left">Descripción</th>
-                            <th className="p-1 text-right">Monto</th>
+                            <th className="p-1 text-left">Rif</th>
+                            <th className="p-1 text-right">Monto total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -240,8 +239,7 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                             <tr key={invoice.id} className="text-slate-700">
                               <td className="p-1 text-[9px]">{invoice.invoiceDate}</td>
                               <td className="p-1 text-[10px] font-medium">{invoice.supplierName}</td>
-                              <td className="p-1 text-[9px] font-mono">{invoice.invoiceNumber}</td>
-                              <td className="p-1 text-[9px] text-gray-500 truncate max-w-[100px] block">{invoice.itemsDescription}</td>
+                              <td className="p-1 text-[9px] font-mono">{invoice.rif}</td>
                               <td className="p-1 text-right font-bold font-mono text-[10px]">{formatCurrency(invoice.totalAmount)}</td>
                             </tr>
                           ))}
@@ -263,9 +261,8 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                         <tr>
                           <th className="p-1 text-left">Fecha</th>
                           <th className="p-1 text-left">Proveedor</th>
-                          <th className="p-1 text-left">Nro.</th>
-                          <th className="p-1 text-left">Descripción</th>
-                          <th className="p-1 text-right">Monto</th>
+                          <th className="p-1 text-left">Rif</th>
+                          <th className="p-1 text-right">Monto total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -273,8 +270,7 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                           <tr key={invoice.id} className="text-slate-700">
                             <td className="p-1 text-[9px]">{invoice.invoiceDate}</td>
                             <td className="p-1 text-[10px] font-medium">{invoice.supplierName}</td>
-                            <td className="p-1 text-[9px] font-mono">{invoice.invoiceNumber}</td>
-                            <td className="p-1 text-[9px] text-gray-500 truncate max-w-[100px] block">{invoice.itemsDescription}</td>
+                            <td className="p-1 text-[9px] font-mono">{invoice.rif}</td>
                             <td className="p-1 text-right font-bold font-mono text-[10px]">{formatCurrency(invoice.totalAmount)}</td>
                           </tr>
                         ))}
@@ -289,22 +285,22 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
                   </div>
                 )}
               </div>
-             </div>
+            </div>
           )}
 
           {/* PIE DE FIRMA */}
           <div className="mt-auto pt-6 print:pt-12">
-             <div className="grid grid-cols-2 gap-6">
-                <div className="border-t border-slate-800 pt-1 text-center">
-                  <p className="text-[10px] font-bold text-slate-800">Preparado por:</p>
-                </div>
-                <div className="border-t border-slate-800 pt-1 text-center">
-                   <p className="text-[10px] font-bold text-slate-800">Aprobado por:</p>
-                </div>
-             </div>
-             <div className="mt-4 text-center text-[9px] text-gray-400 font-mono">
-               Generado por Gestor de Gastos Comunitarios v1.0 - {new Date().toLocaleString()}
-             </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="border-t border-slate-800 pt-1 text-center">
+                <p className="text-[10px] font-bold text-slate-800">Preparado por:</p>
+              </div>
+              <div className="border-t border-slate-800 pt-1 text-center">
+                <p className="text-[10px] font-bold text-slate-800">Aprobado por:</p>
+              </div>
+            </div>
+            <div className="mt-4 text-center text-[9px] text-gray-400 font-mono">
+              Generado por Gestor de Gastos Comunitarios v1.0 - {new Date().toLocaleString()}
+            </div>
           </div>
 
         </div>
@@ -318,29 +314,47 @@ const SummaryReportModal: React.FC<SummaryReportModalProps> = ({
     style.innerHTML = `
       @media print {
         @page { size: Letter; margin: 10mm; }
-        body { background: white !important; }
+        html, body { 
+          height: auto !important; 
+          overflow: visible !important; 
+          background: white !important;
+        }
         body > * { display: none !important; }
         #summary-report-portal {
           display: block !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
+          position: static !important;
           width: 100% !important;
-          height: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
           background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
         }
         #report-paper {
+          display: block !important;
+          position: static !important;
           box-shadow: none !important;
           margin: 0 !important;
           max-width: 100% !important;
-          min-height: auto !important;
           width: 100% !important;
+          height: auto !important;
           border: none !important;
         }
         .no-print { display: none !important; }
+        
+        /* Evitar cortes en elementos importantes */
+        tr, .break-inside-avoid {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        thead { display: table-header-group !important; }
+        tfoot { display: table-footer-group !important; }
+
         #report-paper, #report-paper * {
           color: black !important;
           -webkit-print-color-adjust: exact !important; 
+          print-color-adjust: exact !important;
         }
       }
     `;
